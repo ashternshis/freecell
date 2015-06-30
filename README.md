@@ -1,4 +1,5 @@
 # freecell
+<<<<<<< HEAD
 
 FIXME: description
 
@@ -34,3 +35,5 @@ Copyright © 2015 FIXME
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
+=======
+>>>>>>> 2c3edec42780fac0ca78705c04b2e56f8e378c93
