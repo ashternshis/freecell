@@ -8,6 +8,7 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS listings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     url TEXT NOT NULL UNIQUE,
+    site_id TEXT,
     title TEXT,
     brand TEXT,
     model TEXT,
@@ -34,6 +35,7 @@ CREATE TABLE IF NOT EXISTS scrape_runs (
     note TEXT
 );
 
+CREATE INDEX IF NOT EXISTS idx_listings_site_id ON listings(site_id);
 CREATE INDEX IF NOT EXISTS idx_listings_brand ON listings(brand);
 CREATE INDEX IF NOT EXISTS idx_listings_price ON listings(price_eur);
 """
@@ -80,11 +82,12 @@ def upsert_listing(conn: sqlite3.Connection, listing: dict) -> bool:
     ).fetchone()
     conn.execute(
         """INSERT INTO listings
-               (url, title, brand, model, year, mileage_km, price_eur,
-                location, seller, description, image_url, raw_json,
-                first_seen_at, last_seen_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               (url, site_id, title, brand, model, year, mileage_km,
+                price_eur, location, seller, description, image_url,
+                raw_json, first_seen_at, last_seen_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(url) DO UPDATE SET
+               site_id = COALESCE(excluded.site_id, listings.site_id),
                title = excluded.title,
                brand = COALESCE(excluded.brand, listings.brand),
                model = COALESCE(excluded.model, listings.model),
@@ -98,7 +101,8 @@ def upsert_listing(conn: sqlite3.Connection, listing: dict) -> bool:
                image_url = COALESCE(excluded.image_url, listings.image_url),
                raw_json = excluded.raw_json,
                last_seen_at = excluded.last_seen_at""",
-        (listing["url"], listing.get("title"), listing.get("brand"),
+        (listing["url"], listing.get("site_id"), listing.get("title"),
+         listing.get("brand"),
          listing.get("model"), listing.get("year"), listing.get("mileage_km"),
          listing.get("price_eur"), listing.get("location"),
          listing.get("seller"), listing.get("description"),
